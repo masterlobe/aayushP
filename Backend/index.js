@@ -48,7 +48,18 @@ app.get("/calls", async (req, res) => {
   }
 });
 
+// 🔹 Root - return number of calls
+app.get('/', async (req, res) => {
+  try {
+    const count = await Call.countDocuments();
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch count' });
+  }
+});
+
 // 🔹 Add a call (with validation & sanitization)
+
 app.post("/calls", async (req, res) => {
   try {
     let {
@@ -71,6 +82,12 @@ app.post("/calls", async (req, res) => {
     status = status || "Didn’t pick up";
     rating = Number(rating) || 0;
     ratingsCount = Number(ratingsCount) || 0;
+
+    // 🔎 Check for duplicates by clinic + phone
+    const exists = await Call.findOne({ clinic, phone });
+    if (exists) {
+      return res.status(409).json({ error: 'Call with this clinic and phone already exists' });
+    }
 
     const newCall = new Call({
       clinic,
@@ -98,7 +115,7 @@ app.delete("/calls/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to delete call" });
   }
-});
+}); 
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
